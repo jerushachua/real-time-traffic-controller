@@ -1,5 +1,5 @@
 /*
- * Traffic creator header file. 
+ * Traffic creator header file.
  *
  */
 
@@ -11,4 +11,3 @@
 void TrafficCreatorTask( void *pvParameters );
 
 #endif 
-
