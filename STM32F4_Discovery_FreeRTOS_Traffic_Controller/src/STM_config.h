@@ -45,6 +45,8 @@
 #define TRAFFIC_LIGHT_TASK_PRIORITY     ( tskIDLE_PRIORITY + 2 )
 #define TRAFFIC_DISPLAY_TASK_PRIORITY	( tskIDLE_PRIORITY  )
 
+#define MAX_QUEUE_LENGTH            ( 1 )
+
 uint16_t g_flowrate;
 uint16_t g_light_colour;
 uint16_t g_car_value;
@@ -52,5 +54,9 @@ uint16_t g_car_value;
 SemaphoreHandle_t	xMutexFlow;
 SemaphoreHandle_t	xMutexLight;
 SemaphoreHandle_t	xMutexCars;
+
+static xQueueHandle xADCQueue = NULL;
+static xQueueHandle xFlowQueue = NULL;
+static xQueueHandle xCarQueue = NULL;
 
 #endif 

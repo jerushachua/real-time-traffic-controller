@@ -16,7 +16,7 @@
 
 void vGreenLightTimerCallback( xTimerHandle xTimer ) 
 {
-	printf("GreenLightTimerCallback: Green light off, yellow light on. \n");
+	printf("Green light off, yellow light on. \n");
 	GPIO_ResetBits(TRAFFIC_LIGHT_PORT, TRAFFIC_LIGHT_GREEN_PIN); 
 	GPIO_SetBits(TRAFFIC_LIGHT_PORT, TRAFFIC_LIGHT_YELLOW_PIN); 
 
@@ -24,11 +24,11 @@ void vGreenLightTimerCallback( xTimerHandle xTimer )
     {
 		g_light_colour = 0; 
 		xSemaphoreGive( xMutexLight ); 
-		printf("GreenLightTimerCallback: Updated light colour to red. \n");
+		printf("Updated light colour to red. \n");
     }
 	else
 	{
-		printf("GreenLightTimerCallback: xMutexLight unavailable \n");
+		printf("xMutexLight unavailable when trying to change to green light. \n");
 	}
 
 	xTimerStart( xYellowLightSoftwareTimer, 0 ); 
@@ -37,7 +37,7 @@ void vGreenLightTimerCallback( xTimerHandle xTimer )
 
 void vYellowLightTimerCallback( xTimerHandle xTimer ) 
 	{
-	printf("YellowLightTimerCallback: Yellow light off, red light on. \n");
+	printf("Yellow light off, red light on. \n");
 	GPIO_ResetBits(TRAFFIC_LIGHT_PORT, TRAFFIC_LIGHT_YELLOW_PIN); 
 	GPIO_SetBits(TRAFFIC_LIGHT_PORT, TRAFFIC_LIGHT_RED_PIN); 
 
@@ -47,7 +47,7 @@ void vYellowLightTimerCallback( xTimerHandle xTimer )
 
 void vRedLightTimerCallback( xTimerHandle xTimer )
 {
-	printf("RedLightTimerCallback: Red light off, green light on. \n");
+	printf("Red light off, green light on. \n");
 	GPIO_ResetBits(TRAFFIC_LIGHT_PORT, TRAFFIC_LIGHT_RED_PIN); 
 	GPIO_SetBits(TRAFFIC_LIGHT_PORT, TRAFFIC_LIGHT_GREEN_PIN); 
 
@@ -55,11 +55,11 @@ void vRedLightTimerCallback( xTimerHandle xTimer )
     {
 		g_light_colour = 1;	
 		xSemaphoreGive( xMutexLight ); 
-		printf("RedLightTimerCallback: Updated light colour to green. \n");
+		printf(" Updated light colour to green. \n");
     }
 	else
 	{
-		printf("RedLightTimerCallback: xMutexLight unavailable \n");
+		printf("xMutexLight unavailable when trying to change to red light. \n");
 	}
 
 	xTimerStart( xGreenLightSoftwareTimer, 0 ); 
@@ -69,8 +69,9 @@ void vRedLightTimerCallback( xTimerHandle xTimer )
 void TrafficLightTask ( void *pvParameters )
 {
 
-	uint16_t new_speed_value = 4;           // Set default speed value to 4, update it when an ADC value is read.
-	uint16_t current_speed_value = 0;       // Set to 0 to force an update of the timers.
+	// Flow rate ranges from 0 to 7. 
+	uint16_t new_speed_value = 4;           // Set default speed value to 4. Update as the ADC is read.
+	uint16_t current_speed_value = 0;       // Set to 0 to force an update of the timers. 
 
 	while(1)
 	{
@@ -86,6 +87,7 @@ void TrafficLightTask ( void *pvParameters )
 			printf("Traffic Light Task: xMutexFlow unavailable \n");
 		}
 
+		// The length of the light timers depends on the current flow rate. 
 		if(current_speed_value !=  new_speed_value) 
 		{
 			if(xTimerIsTimerActive( xGreenLightSoftwareTimer ))

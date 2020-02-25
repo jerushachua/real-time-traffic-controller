@@ -81,8 +81,7 @@
 void HardwareInit(void);
 
 // Test task declaration
-void ADCTestTask( void *pvParameters );
-void ShiftTestTask( void *pvParameters );
+void ADCTest( );
 
 /*-----------------------------------------------------------*/
 
@@ -91,23 +90,21 @@ int main(void)
 	HardwareInit(); // Initialize the GPIO and ADC
 
 
-	// Creating the mutexes used for accessing global variables shared between tasks.
+	// Creating mutexes for accesing variables between tasks. 
     xMutexFlow = xSemaphoreCreateMutex();
     if( xMutexFlow == NULL )
     {
-		// Not enough space on the FreeRTOS heap available 
-        printf("ERROR: TRAFFIC FLOW SEMAPHORE NOT CREATED. \n"); 
+        printf("ERROR: CANNOT CREATE TRAFFIC FLOW SEMAPHORE. \n"); 
     }
     else
     {
-    	xSemaphoreGive( xMutexFlow ); // need to give semaphore after it is defined
+    	xSemaphoreGive( xMutexFlow ); 
     }
 
     xMutexLight = xSemaphoreCreateMutex();
     if( xMutexLight == NULL )
     {	
-		// Not enough space on the FreeRTOS heap available 
-        printf("ERROR: LIGHT SEMAPHORE NOT CREATED. \n"); 
+        printf("ERROR: CANNOT CREATE LIGHT SEMAPHORE. \n"); 
     }
     else
     {
@@ -117,8 +114,7 @@ int main(void)
     xMutexCars = xSemaphoreCreateMutex();
     if( xMutexCars == NULL )
     {	
-		// Not enough space on the FreeRTOS heap available 
-        printf("ERROR: CARS SEMAPHORE NOT CREATED. \n"); 
+        printf("ERROR: CANNOT CREATE CAR SEMAPHORE. \n"); 
     }
     else
     {
@@ -136,10 +132,33 @@ int main(void)
 	xYellowLightSoftwareTimer = xTimerCreate("YellowLightTimer",   2000 / portTICK_PERIOD_MS  , pdFALSE, ( void * ) 0,	vYellowLightTimerCallback);
 	xGreenLightSoftwareTimer  = xTimerCreate("GreenLightTimer" ,   10000 / portTICK_PERIOD_MS , pdFALSE, ( void * ) 0,	vGreenLightTimerCallback);
 
-	// Start the system with the light being green.
-	GPIO_SetBits(TRAFFIC_LIGHT_PORT, TRAFFIC_LIGHT_GREEN_PIN);        // turn on the green light on the traffic light
-	xTimerStart( xGreenLightSoftwareTimer, 0 );                       // start the green light timer
-	g_light_colour = 1; 						                      // set light to green, don't care about semaphore since tasks havent been started.
+    // Create queues
+    xADCQueue = xQueueCreate( MAX_QUEUE_LENGTH, sizeof( uint32_t ) );
+    if ( xADCQueue == NULL ) 
+    {
+        printf("ERROR: CANNOT CREATE ADC QUEUE. \n"); 
+    }
+
+	xFlowQueue = xQueueCreate( MAX_QUEUE_LENGTH, sizeof( uint16_t ) );	
+    if ( xFlowQueue == NULL )
+    {
+        printf("ERROR: CANNOT CREATE FLOW QUEUE. \n"); 
+    }
+
+    xCarQueue = xQueueCreate( MAX_QUEUE_LENGTH, sizeof( uint16_t ) );	
+    if ( xCarQueue == NULL )
+    {
+        printf("ERROR: CANNOT CREATE CAR QUEUE. \n"); 
+    }
+
+    vQueueAddToRegistry( xADCQueue, "ADCQueue" );
+	vQueueAddToRegistry( xFlowQueue, "FlowQueue" );
+    vQueueAddToRegistry( xCarQueue, "CarQueue" );
+
+	// Start the system with the light at green
+	GPIO_SetBits(TRAFFIC_LIGHT_PORT, TRAFFIC_LIGHT_GREEN_PIN); 
+	xTimerStart( xGreenLightSoftwareTimer, 0 ); 
+	g_light_colour = 1; 
 
 
 	/* Start the tasks and timer running. */
@@ -157,39 +176,41 @@ void HardwareInit()
 	http://www.freertos.org/RTOS-Cortex-M3-M4.html */
 	NVIC_SetPriorityGrouping( 0 );
 
-	// 1. Init GPIO
+	// Init GPIOs
 	GPIO_InitTypeDef      SHIFT_1_GPIO_InitStructure;
 	GPIO_InitTypeDef      SHIFT_2_GPIO_InitStructure;
 	GPIO_InitTypeDef      TRAFFIC_GPIO_InitStructure;
 
-	// Enable all GPIO clocks for GPIO, reduce potential of missing one in future updates.
+	// Enable all GPIO clocks for GPIO
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE);
 
-    SHIFT_1_GPIO_InitStructure.GPIO_Pin   = SHIFT_REG_1_PIN | SHIFT_REG_CLK_1_PIN;   // Shift register 1 output and clock set on same unique GPIO port.
-    SHIFT_1_GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;                           // Set output mode
-    SHIFT_1_GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;                           // Set push-pull mode
-    SHIFT_1_GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;                        // Disable pull-ups / pull-downs
-    SHIFT_1_GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;                        // Set higher speed to allow quick shifting refresh for shift register (Max for shift register itself is 25Mhz)
+    // Shift register 1 output and clock set on same unique GPIO port
+    SHIFT_1_GPIO_InitStructure.GPIO_Pin   = SHIFT_REG_1_PIN | SHIFT_REG_CLK_1_PIN;   
+    SHIFT_1_GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT; 
+    SHIFT_1_GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; 
+    SHIFT_1_GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL; 
+    SHIFT_1_GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz; 
     GPIO_Init(SHIFT_REG_1_PORT, &SHIFT_1_GPIO_InitStructure);
 
-    SHIFT_2_GPIO_InitStructure.GPIO_Pin   = SHIFT_REG_2_PIN | SHIFT_REG_CLK_2_PIN;   // Shift register 2 output and clock set on same unique GPIO port.
-    SHIFT_2_GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;                           // Set output mode
-    SHIFT_2_GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;                           // Set push-pull mode
-    SHIFT_2_GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;                        // Disable pull-ups / pull-downs
+    // Shift register 2 output and clock set on same unique GPIO port
+    SHIFT_2_GPIO_InitStructure.GPIO_Pin   = SHIFT_REG_2_PIN | SHIFT_REG_CLK_2_PIN;   
+    SHIFT_2_GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT; 
+    SHIFT_2_GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; 
+    SHIFT_2_GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL; 
     GPIO_Init(SHIFT_REG_2_PORT, &SHIFT_2_GPIO_InitStructure);
 
-    TRAFFIC_GPIO_InitStructure.GPIO_Pin   = TRAFFIC_LIGHT_RED_PIN | TRAFFIC_LIGHT_YELLOW_PIN | TRAFFIC_LIGHT_GREEN_PIN;    // Traffic light GPIO same unique GPIO port.
-    TRAFFIC_GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;                                                                 // Set output mode
-    TRAFFIC_GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;                                                                 // Set push-pull mode
-    TRAFFIC_GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;                                                              // Disable pull-ups / pull-downs
+    // Traffic light GPIO same unique GPIO port.
+    TRAFFIC_GPIO_InitStructure.GPIO_Pin   = TRAFFIC_LIGHT_RED_PIN | TRAFFIC_LIGHT_YELLOW_PIN | TRAFFIC_LIGHT_GREEN_PIN;    
+    TRAFFIC_GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT; 
+    TRAFFIC_GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; 
+    TRAFFIC_GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
     GPIO_Init(TRAFFIC_LIGHT_PORT, &TRAFFIC_GPIO_InitStructure);
 
-
-	// 2. Init ADC
+	// Typedefs
 	ADC_InitTypeDef       ADC_InitStructure;
 	GPIO_InitTypeDef      ADC_GPIO_InitStructure;
 
@@ -198,58 +219,38 @@ void HardwareInit()
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 
     // Configure ADC1 Channel11 pin as analog input
-    ADC_GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_1;                              // Using PC1, channel 11 of ADC
-    ADC_GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;                            // Set analog mode
-    ADC_GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;                        // Set push-pull mode
+    ADC_GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_1; 
+    ADC_GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN; 
+    ADC_GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL; 
     GPIO_Init(GPIOC, &ADC_GPIO_InitStructure);
 
-    // ADC1 Init
-    ADC_InitStructure.ADC_Resolution = ADC_Resolution_12b;                      // Set ADC for 12 bit resolution (highest)
+    // ADC init
+    ADC_InitStructure.ADC_Resolution = ADC_Resolution_12b; // Set ADC for 12 bit resolution (highest)
     ADC_InitStructure.ADC_ScanConvMode = DISABLE;
-    ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;                          // Enable continuous scanning for ADC
+    ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;
     ADC_InitStructure.ADC_ExternalTrigConv = DISABLE;
     ADC_InitStructure.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
     ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
-    ADC_InitStructure.ADC_NbrOfConversion = 1;                                  // Perform a single conversion when start conversion is called
+    ADC_InitStructure.ADC_NbrOfConversion = 1;
     ADC_Init(ADC1, &ADC_InitStructure);
 
-    ADC_Cmd(ADC1, ENABLE );                                                     // Enable ADC1
+    ADC_Cmd(ADC1, ENABLE ); 
     ADC_RegularChannelConfig(ADC1, ADC_Channel_11 , 1, ADC_SampleTime_84Cycles);
-} // end HardwareInit
+} 
 
 
-// Initial testing tasks used to test the shift register and ADC
-void ShiftTestTask ( void* pvParameters )
-{
-	while(1)
-	{
-		printf("ShiftTestTop!\n");
-		ShiftRegisterValuePreLight( true );
-		vTaskDelay(500);
-		ShiftRegisterValuePreLight( true );
-		vTaskDelay(500);
-		ShiftRegisterValuePreLight( false );
-		vTaskDelay(500);
-		ShiftRegisterValuePreLight( false );
-		vTaskDelay(500);
-	}
-} // end ShiftTestTask
-
-
-void ADCTestTask( void* pvParameters)
+void ADCTest( )
 {
 	uint16_t adc_value;
 	while(1)
 	{
 		ADC_SoftwareStartConv(ADC1);
-		// wait for ADC to finish conversion
 		while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC));
-		// grab ADC value
 		adc_value = ADC_GetConversionValue(ADC1);
 		printf("ADC Value: %d\n", adc_value);
 		vTaskDelay(500);
 	}
-} // end ADCTestTask
+} 
 
 
 void vApplicationMallocFailedHook( void )
@@ -282,7 +283,7 @@ void vApplicationStackOverflowHook( xTaskHandle pxTask, signed char *pcTaskName 
 
 void vApplicationIdleHook( void )
 {
-volatile size_t xFreeStackSpace;
+    volatile size_t xFreeStackSpace;
 
 	/* The idle task hook is enabled by setting configUSE_IDLE_HOOK to 1 in
 	FreeRTOSConfig.h.

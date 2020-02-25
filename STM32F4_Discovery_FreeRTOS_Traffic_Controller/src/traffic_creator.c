@@ -17,16 +17,16 @@ void TrafficCreatorTask ( void *pvParameters )
 
 	while(1)
 	{
-		printf("CreatorTask: Starting flowrate:  %u. \n", flowrate );
+		printf("Starting flowrate:  %u. \n", flowrate );
 		if( xSemaphoreTake( xMutexFlow, ( TickType_t ) 10 ) == pdTRUE ) 
 		{
 			flowrate = g_flowrate;
 			xSemaphoreGive( xMutexFlow );
-			printf("CreatorTask: Accessed xMutexFlow, updated flowrate:  %u. \n", flowrate );
+			printf("Updated flowrate:  %u. \n", flowrate );
 		}
 		else
 		{
-			printf("CreatorTask: xMutexFlow unavailable \n");
+			printf("xMutexFlow unavailable. \n");
 		}
 
 		/*
@@ -41,15 +41,15 @@ void TrafficCreatorTask ( void *pvParameters )
 		printf("Car value updated to:  %u \n", car_value);
 
 
-		if( xSemaphoreTake( xMutexCars, ( TickType_t ) 10 ) == pdTRUE ) // get flowrate semaphore to update with new traffic flowrate
+		if( xSemaphoreTake( xMutexCars, ( TickType_t ) 10 ) == pdTRUE ) // get flowrate mutex to update with new traffic flowrate
 		{
 			g_car_value = car_value;
 			xSemaphoreGive( xMutexCars );
-			printf("Mutex accessed: updated car value:  %u. \n", car_value );
+			printf("Updated car value:  %u. \n", car_value );
 		}
 		else
 		{
-			printf("CreatorTask: xMutexCars unavailable \n");
+			printf("xMutexCars unavailable.  \n");
 		}
 
 		vTaskDelay(500);
