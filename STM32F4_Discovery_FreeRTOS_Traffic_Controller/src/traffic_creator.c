@@ -17,12 +17,21 @@ void TrafficCreatorTask ( void *pvParameters )
 
 	while(1)
 	{
-		printf("Starting flowrate:  %u. \n", flowrate );
 		if( xSemaphoreTake( xMutexFlow, ( TickType_t ) 10 ) == pdTRUE ) 
 		{
 			flowrate = global_flowrate;
 			xSemaphoreGive( xMutexFlow );
 			printf("Updated flowrate:  %u. \n", flowrate );
+
+			if (xQueueReceive( xFlowQueue, &flowrate, portMAX_DELAY ) ) // testing queue receive
+			{	
+				printf("Successfully received flowrate from QUEUE (traffic creator task).\n");
+				xQueueSend( xFlowQueue, &flowrate, portMAX_DELAY); // push value back for the traffic light 
+			}
+			
+			else 
+			printf("Failed to receive value from QUEUE.\n"; )
+
 		}
 		else
 		{
@@ -31,17 +40,18 @@ void TrafficCreatorTask ( void *pvParameters )
 
 		/*
 		 * compute the value for the display (0/1)
-		 * received should be a value 1-8
-		 * generate random number range[0:100]
-		 * if the random number is below 100/(8 - value from traffic flow task) create a car
+		 * flowrate is between 0 and 7
+		 * generate random number range 0 to 64, inclusive
+		 * if the random number is below 64 / flowrate + 1, create a car
 		 * if the value from traffic flow task is high, there is a higher probability of a car being created
+		 *  rand num % 64 < 8  * flowrate + 1
+		 *  0 to 63 range < 8 * ( 1 to 8 range) 
+		 *  then at max flow rate, the probability of a car being created is near 100% 
+		 *  0 to 63 range < 8*8 = 64 
 		*/
-		car_value = (rand() % 100 ) < 100/(8 - flowrate);
+		car_value = ( rand() % 64 ) < ( 8 * (flowrate+1) ); 
 
-		printf("Car value updated to:  %u \n", car_value);
-
-
-		if( xSemaphoreTake( xMutexCars, ( TickType_t ) 10 ) == pdTRUE ) // get flowrate mutex to update with new traffic flowrate
+		if( xSemaphoreTake( xMutexCars, ( TickType_t ) 10 ) == pdTRUE )
 		{
 			global_car_value = car_value;
 			xSemaphoreGive( xMutexCars );
@@ -52,6 +62,6 @@ void TrafficCreatorTask ( void *pvParameters )
 			printf("xMutexCars unavailable.  \n");
 		}
 
-		vTaskDelay(500);
+		vTaskDelay(100);
 	}
 } 
