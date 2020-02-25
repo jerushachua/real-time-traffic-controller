@@ -24,7 +24,6 @@ void TrafficDisplayTask ( void *pvParameters )
 		{
 			car_value = global_car_value; 
 			xSemaphoreGive( xMutexCars ); 
-			printf("Updated local car_value:  %u. \n", car_value );
 		}
 		else
 		{
@@ -35,7 +34,7 @@ void TrafficDisplayTask ( void *pvParameters )
 	    {
 			light_colour = global_light_colour;
 			xSemaphoreGive( xMutexLight ); 
-			printf("Updated light colour: %u. (1 is green, 0 is red) \n", light_colour);
+			printf("Traffic light colour currently %u. (1 is green, 0 is red) \n", light_colour);
 	    }
 		else
 		{
@@ -47,12 +46,13 @@ void TrafficDisplayTask ( void *pvParameters )
 		{
 			printf("Light is green, shifting normally. \n ");
 
-			ShiftRegisterValuePreLight(car_value);                            // Add the new car value on the road
-			ShiftRegisterValuePostLight(currentactiveprelighttraffic[7]);     // Shift the car passing through the light to past the light
+			SR_PreLight(car_value); 
+			SR_PostLight(currentactiveprelighttraffic[7]); 
 
-			newactiveprelighttraffic[0] = car_value;                          // Update the active car list with the new car value
+			newactiveprelighttraffic[0] = car_value; 
 
-			for (uint16_t i = 1; i != 8; i++)                                 // Shift the values from the current list to the active list
+			// shift the new car onto the list of cars
+			for (uint16_t i = 1; i != 8; i++) 
 			{
 				newactiveprelighttraffic[i] = currentactiveprelighttraffic[i-1];
 			}
@@ -61,9 +61,9 @@ void TrafficDisplayTask ( void *pvParameters )
 		{
 			printf("Light is red, doing fast shift. \n ");
 
-			// need to account for new value, and not push off cars. Prepare data.
 			uint16_t encounteredzero = 0;
 
+			// TODO: refactor this 
 			for (uint16_t i = 7; i != 0; i--)                                          // Search through the traffic list by decrementing, looking for the first 0
 			{
 	            if(currentactiveprelighttraffic[i] == 0)                               // Find a zero in the active traffic. If it exists, set the encounteredzero flag
@@ -80,23 +80,22 @@ void TrafficDisplayTask ( void *pvParameters )
 	            {
 	            	newactiveprelighttraffic[i] = currentactiveprelighttraffic[i];
 	            }
-
 			}
 
 
 			for (int16_t i = 7; i >= 0 ; i--) 
 			{
-				ShiftRegisterValuePreLight(newactiveprelighttraffic[i] );
+				SR_PreLight(newactiveprelighttraffic[i] );
 			}
-			ShiftRegisterValuePostLight(0);
+			SR_PostLight(0);
 		}
 
-		// update current values for next iteration
+		// move all the lights forward
 		for(uint16_t i = 0; i != 8; i++)
 		{
 			currentactiveprelighttraffic[i] = newactiveprelighttraffic[i];
 		}
 
-		vTaskDelay(500);
+		vTaskDelay(100);
 	}
 }

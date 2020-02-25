@@ -81,6 +81,11 @@ void TrafficLightTask ( void *pvParameters )
 			new_speed_value = global_flowrate; 
 			xSemaphoreGive( xMutexFlow ); 
 			printf("Traffic Light Task: updated local flowrate:  %u.\n", new_speed_value );
+
+			if (xQueueReceive( xFlowQueue, &flowrate, portMAX_DELAY ) ) // testing queue receive
+			{	
+				printf("Successfully received flowrate from QUEUE (traffic light task).\n");
+			}
 	    }
 		else
 		{
@@ -114,6 +119,6 @@ void TrafficLightTask ( void *pvParameters )
 		} 
 
 		current_speed_value = new_speed_value; 
-		vTaskDelay(500);
+		vTaskDelay(100);
 	}
 } 

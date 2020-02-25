@@ -26,7 +26,7 @@ void TrafficFlowAdjustTask ( void *pvParameters )
 
 		// The ADC ranges from 0 to 4096. Divide the raw ADC value by 512 to get 8 possible values.
 		speed_adc_value = adc_value/512; 
-		if(speed_adc_value == 8)
+		if(speed_adc_value >= 8)
 		{
 			speed_adc_value = 7;
 		}
@@ -36,17 +36,20 @@ void TrafficFlowAdjustTask ( void *pvParameters )
 	    {
 	    	current_speed_value = speed_adc_value; 
 
+			// TODO: push ADC value onto the queue 
 			if( xSemaphoreTake( xMutexFlow, ( TickType_t ) 10 ) == pdTRUE ) 
 		    {
 				global_flowrate = speed_adc_value; 
 				xSemaphoreGive( xMutexFlow ); 
 				printf("Updated flowrate:  %u, (ADC Value: %u). \n", speed_adc_value, adc_value );
+
+				xQueueSend( xFlowQueue, &speed_adc_value, portMAX_DELAY); // testing queue sending
 		    }
 			else{
 				printf("xMutexFlow unavailable \n");
 			}
 	    } 
 
-        vTaskDelay(200);
+        vTaskDelay(100);
 	}
 } 
