@@ -38,7 +38,7 @@ void TrafficFlowAdjustTask ( void *pvParameters )
 
 			if( xSemaphoreTake( xMutexFlow, ( TickType_t ) 10 ) == pdTRUE ) 
 		    {
-				g_flowrate = speed_adc_value; 
+				global_flowrate = speed_adc_value; 
 				xSemaphoreGive( xMutexFlow ); 
 				printf("Updated flowrate:  %u, (ADC Value: %u). \n", speed_adc_value, adc_value );
 		    }

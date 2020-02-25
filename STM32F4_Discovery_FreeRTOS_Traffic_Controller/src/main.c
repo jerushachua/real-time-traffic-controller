@@ -158,7 +158,7 @@ int main(void)
 	// Start the system with the light at green
 	GPIO_SetBits(TRAFFIC_LIGHT_PORT, TRAFFIC_LIGHT_GREEN_PIN); 
 	xTimerStart( xGreenLightSoftwareTimer, 0 ); 
-	g_light_colour = 1; 
+	global_light_colour = 1; 
 
 
 	/* Start the tasks and timer running. */

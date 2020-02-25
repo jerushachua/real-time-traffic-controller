@@ -20,7 +20,7 @@ void TrafficCreatorTask ( void *pvParameters )
 		printf("Starting flowrate:  %u. \n", flowrate );
 		if( xSemaphoreTake( xMutexFlow, ( TickType_t ) 10 ) == pdTRUE ) 
 		{
-			flowrate = g_flowrate;
+			flowrate = global_flowrate;
 			xSemaphoreGive( xMutexFlow );
 			printf("Updated flowrate:  %u. \n", flowrate );
 		}
@@ -43,7 +43,7 @@ void TrafficCreatorTask ( void *pvParameters )
 
 		if( xSemaphoreTake( xMutexCars, ( TickType_t ) 10 ) == pdTRUE ) // get flowrate mutex to update with new traffic flowrate
 		{
-			g_car_value = car_value;
+			global_car_value = car_value;
 			xSemaphoreGive( xMutexCars );
 			printf("Updated car value:  %u. \n", car_value );
 		}

@@ -22,7 +22,7 @@ void vGreenLightTimerCallback( xTimerHandle xTimer )
 
 	if( xSemaphoreTake( xMutexLight, ( TickType_t ) 0 ) == pdTRUE ) 
     {
-		g_light_colour = 0; 
+		global_light_colour = 0; 
 		xSemaphoreGive( xMutexLight ); 
 		printf("Updated light colour to red. \n");
     }
@@ -53,7 +53,7 @@ void vRedLightTimerCallback( xTimerHandle xTimer )
 
 	if( xSemaphoreTake( xMutexLight, ( TickType_t ) 0 ) == pdTRUE ) 
     {
-		g_light_colour = 1;	
+		global_light_colour = 1;	
 		xSemaphoreGive( xMutexLight ); 
 		printf(" Updated light colour to green. \n");
     }
@@ -78,7 +78,7 @@ void TrafficLightTask ( void *pvParameters )
 		// Update local flow/speed variable
 		if( xSemaphoreTake( xMutexFlow, ( TickType_t ) 10 ) == pdTRUE ) 
 	    {
-			new_speed_value = g_flowrate; 
+			new_speed_value = global_flowrate; 
 			xSemaphoreGive( xMutexFlow ); 
 			printf("Traffic Light Task: updated local flowrate:  %u.\n", new_speed_value );
 	    }

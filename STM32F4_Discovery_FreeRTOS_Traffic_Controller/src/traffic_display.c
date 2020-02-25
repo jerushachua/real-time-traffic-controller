@@ -22,7 +22,7 @@ void TrafficDisplayTask ( void *pvParameters )
 		// Update local car and light variables
 		if( xSemaphoreTake( xMutexCars, ( TickType_t ) 10 ) == pdTRUE ) 
 		{
-			car_value = g_car_value; 
+			car_value = global_car_value; 
 			xSemaphoreGive( xMutexCars ); 
 			printf("Updated local car_value:  %u. \n", car_value );
 		}
@@ -33,7 +33,7 @@ void TrafficDisplayTask ( void *pvParameters )
 
 		if( xSemaphoreTake( xMutexLight, ( TickType_t ) 0 ) == pdTRUE ) 
 	    {
-			light_colour = g_light_colour;
+			light_colour = global_light_colour;
 			xSemaphoreGive( xMutexLight ); 
 			printf("Updated light colour: %u. (1 is green, 0 is red) \n", light_colour);
 	    }
