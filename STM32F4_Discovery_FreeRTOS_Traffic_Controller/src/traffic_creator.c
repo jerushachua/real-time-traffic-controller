@@ -23,14 +23,17 @@ void TrafficCreatorTask ( void *pvParameters )
 			xSemaphoreGive( xMutexFlow );
 			printf("Updated flowrate:  %u. \n", flowrate );
 
+			/*
 			if (xQueueReceive( xFlowQueue, &flowrate, portMAX_DELAY ) ) // testing queue receive
 			{	
 				printf("Successfully received flowrate from QUEUE (traffic creator task).\n");
 				xQueueSend( xFlowQueue, &flowrate, portMAX_DELAY); // push value back for the traffic light 
 			}
 			
-			else 
-			printf("Failed to receive value from QUEUE.\n"; )
+			else
+			printf("Failed to receive value from QUEUE.\n" );
+
+			*/
 
 		}
 		else
@@ -49,7 +52,7 @@ void TrafficCreatorTask ( void *pvParameters )
 		 *  then at max flow rate, the probability of a car being created is near 100% 
 		 *  0 to 63 range < 8*8 = 64 
 		*/
-		car_value = ( rand() % 64 ) < ( 8 * (flowrate+1) ); 
+		car_value = ( rand() % 64 ) < ( 8 * (flowrate+1) * 0.80 ); // 80 percent chance of car at max flow.
 
 		if( xSemaphoreTake( xMutexCars, ( TickType_t ) 10 ) == pdTRUE )
 		{
@@ -62,6 +65,6 @@ void TrafficCreatorTask ( void *pvParameters )
 			printf("xMutexCars unavailable.  \n");
 		}
 
-		vTaskDelay(100);
+		vTaskDelay(200);
 	}
 } 

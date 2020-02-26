@@ -42,13 +42,13 @@ void TrafficFlowAdjustTask ( void *pvParameters )
 				xSemaphoreGive( xMutexFlow ); 
 				printf("Updated flowrate:  %u, (ADC Value: %u). \n", speed_adc_value, adc_value );
 
-				xQueueSend( xFlowQueue, &speed_adc_value, portMAX_DELAY); // testing queue sending
+				// xQueueSend( xFlowQueue, &speed_adc_value, portMAX_DELAY); // testing queue sending
 		    }
 			else{
 				printf("xMutexFlow unavailable \n");
 			}
 	    } 
 
-        vTaskDelay(100);
+        vTaskDelay(200);
 	}
 } 

@@ -89,7 +89,6 @@ int main(void)
 {
 	HardwareInit(); // Initialize the GPIO and ADC
 
-
 	// Creating mutexes for accesing variables between tasks. 
     xMutexFlow = xSemaphoreCreateMutex();
     if( xMutexFlow == NULL )

@@ -105,6 +105,6 @@ void TrafficDisplayTask ( void *pvParameters )
 			cur_prelight_traffic[i] = next_prelight_traffic[i];
 		}
 
-		vTaskDelay(100);
+		vTaskDelay(500);
 	}
 }
