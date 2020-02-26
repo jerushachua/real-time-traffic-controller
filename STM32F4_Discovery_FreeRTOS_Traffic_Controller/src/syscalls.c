@@ -38,6 +38,8 @@ SOFTWARE.
 #include <sys/time.h>
 #include <sys/times.h>
 
+#include "stm32f4xx.h"
+
 
 /* Variables */
 #undef errno
@@ -77,11 +79,10 @@ void _exit(int32_t status)
 
 int _write(int32_t file, uint8_t *ptr, int32_t len)
 {
-	/* Implement your write code here, this is used by puts and printf for example */
-	/* return len; */
-	
-	errno = ENOSYS;
-	return -1;
+	int i=0;
+	for(i=0; i<len ; i++)
+		ITM_SendChar((*ptr++));
+	return len;
 }
 
 void * _sbrk(int32_t incr)
