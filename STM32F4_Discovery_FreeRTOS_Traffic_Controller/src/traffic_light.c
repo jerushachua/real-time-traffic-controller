@@ -24,7 +24,7 @@ void vGreenLightTimerCallback( xTimerHandle xTimer )
     {
 		global_light_colour = 0; 
 		xSemaphoreGive( xMutexLight ); 
-		printf("Updated light colour to red. \n");
+		printf("Updated light colour to yellow. \n");
     }
 	else
 	{
@@ -70,8 +70,8 @@ void TrafficLightTask ( void *pvParameters )
 {
 
 	// Flow rate ranges from 0 to 7. 
-	uint16_t new_speed_value = 4;           // Set default speed value to 4. Update as the ADC is read.
-	uint16_t current_speed_value = 0;       // Set to 0 to force an update of the timers. 
+	uint16_t new_speed_value = 3; 
+	uint16_t current_speed_value = 0; 
 
 	while(1)
 	{
@@ -92,29 +92,40 @@ void TrafficLightTask ( void *pvParameters )
 			printf("Traffic Light Task: xMutexFlow unavailable \n");
 		}
 
-		// The length of the light timers depends on the current flow rate. 
+		/* 
+		 * The length of the light timers depends on the current flow rate. 
+		 * The range of flow values is 0 to 7, inclusive. 
+		 * 
+		 * Green light duration is directly proportional to the rate of traffic flow. 
+		 * A high flowrate should mean the green light period is longer. 
+		 * Ex. 3000 * ( 8 - flowrate ) for flowrates of [0, 1, 2 ...] = [24000, 21000, 18000, 15000, 12000, 9000, 6000, 3000]
+		 * 
+		 * Red light duration is directly proportional to the inverse of the rate of traffic flow. 
+		 * A high flowrate means the red light period is shorter. 
+		 * Ex. 3000 * ( 8 - flowrate ) for flow rates of [0, 1, 2 ...] = [3000, 6000, 9000, 12000, 15000, 18000, 21000, 24000] 
+		 */ 
 		if(current_speed_value !=  new_speed_value) 
 		{
 			if(xTimerIsTimerActive( xGreenLightSoftwareTimer ))
 			{
 				xTimerStop(xGreenLightSoftwareTimer, 0); 
-				xTimerChangePeriod(xGreenLightSoftwareTimer, (5000 + 3000 * (8-new_speed_value))  / portTICK_PERIOD_MS, 0 );  
-				xTimerChangePeriod(xRedLightSoftwareTimer, (3000 + 1500 * (8-new_speed_value)) / portTICK_PERIOD_MS, 0 ); 
+				xTimerChangePeriod(xGreenLightSoftwareTimer, (3000 * (8 - new_speed_value))  / portTICK_PERIOD_MS, 0 );  
+				xTimerChangePeriod(xRedLightSoftwareTimer, (3000 * (8 - new_speed_value)) / portTICK_PERIOD_MS, 0 ); 
 				xTimerStop(xRedLightSoftwareTimer, 0); 
 			}
 			else if(xTimerIsTimerActive( xYellowLightSoftwareTimer ))
 			{
-				xTimerChangePeriod(xGreenLightSoftwareTimer, (5000 + 3000 * (8-new_speed_value))  / portTICK_PERIOD_MS, 0 ); 
+				xTimerChangePeriod(xGreenLightSoftwareTimer, (3000 * (8 - new_speed_value))  / portTICK_PERIOD_MS, 0 ); 
 				xTimerStop(xGreenLightSoftwareTimer, 0); 
-				xTimerChangePeriod(xRedLightSoftwareTimer, (3000 + 1500 * (8-new_speed_value)) / portTICK_PERIOD_MS, 0 ); 
+				xTimerChangePeriod(xRedLightSoftwareTimer, (3000 * (8 - new_speed_value)) / portTICK_PERIOD_MS, 0 ); 
 				xTimerStop(xRedLightSoftwareTimer, 0); 
 			}
 			else if(xTimerIsTimerActive( xRedLightSoftwareTimer ))
 			{
 				xTimerStop(xRedLightSoftwareTimer, 0);
-				xTimerChangePeriod(xGreenLightSoftwareTimer, (5000 + 3000 * (8-new_speed_value))  / portTICK_PERIOD_MS, 0 ); 
+				xTimerChangePeriod(xGreenLightSoftwareTimer, (3000 * (8 - new_speed_value))  / portTICK_PERIOD_MS, 0 ); 
 				xTimerStop(xGreenLightSoftwareTimer, 0); 
-				xTimerChangePeriod(xRedLightSoftwareTimer, (3000 + 1500 * (8-new_speed_value)) / portTICK_PERIOD_MS, 0 ); 
+				xTimerChangePeriod(xRedLightSoftwareTimer, (3000 * (8 - new_speed_value)) / portTICK_PERIOD_MS, 0 ); 
 			}
 		} 
 
