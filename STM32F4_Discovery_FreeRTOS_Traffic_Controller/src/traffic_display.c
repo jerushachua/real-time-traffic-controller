@@ -24,6 +24,16 @@ void TrafficDisplayTask ( void *pvParameters )
 		{
 			car_value = global_car_value; 
 			xSemaphoreGive( xMutexCars ); 
+
+			if ( xQueueReceive( xCarQueue, &car_value, 1000 ) == pdTRUE) // testing queue receive
+			{
+				printf("Successfully received car value from Car Queue (traffic display task).\n");
+				printf("Car value from Car Queue: %u \n", car_value);
+			}
+			else
+			{
+				printf("Failed to receive car value from Car Queue (traffic display task). \n ");
+			}
 		}
 		else
 		{

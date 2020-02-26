@@ -23,17 +23,16 @@ void TrafficCreatorTask ( void *pvParameters )
 			xSemaphoreGive( xMutexFlow );
 			printf("Updated flowrate:  %u. \n", flowrate );
 
-			/*
-			if (xQueueReceive( xFlowQueue, &flowrate, portMAX_DELAY ) ) // testing queue receive
+			// testing queue receive
+			if (xQueueReceive( xADCQueue, &flowrate, 1000 ) == pdTRUE )
 			{	
-				printf("Successfully received flowrate from QUEUE (traffic creator task).\n");
-				xQueueSend( xFlowQueue, &flowrate, portMAX_DELAY); // push value back for the traffic light 
+				printf("Successfully received flowrate from ADC Queue (traffic creator task).\n");
+				printf("ADC Queue flowrate:  %u. \n", flowrate );
 			}
-			
 			else
-			printf("Failed to receive value from QUEUE.\n" );
-
-			*/
+			{
+				printf("Failed to receive value from QUEUE.\n" );
+			}
 
 		}
 		else
@@ -58,8 +57,17 @@ void TrafficCreatorTask ( void *pvParameters )
 		{
 			global_car_value = car_value;
 			xSemaphoreGive( xMutexCars );
-			printf("Updated car value:  %u. \n", car_value );
+
+			if ( xQueueSend( xCarQueue, &car_value, 1000) == pdTRUE )
+			{
+				printf("Updated car value:  %u. \nSent to Car Queue.\n", car_value );
+			}
+			else
+			{
+				printf("Failed to send to Car Queue. \n");
+			}
 		}
+
 		else
 		{
 			printf("xMutexCars unavailable.  \n");

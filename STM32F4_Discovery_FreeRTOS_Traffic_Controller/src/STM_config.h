@@ -55,8 +55,8 @@ SemaphoreHandle_t	xMutexFlow;
 SemaphoreHandle_t	xMutexLight;
 SemaphoreHandle_t	xMutexCars;
 
-static xQueueHandle xADCQueue = NULL;
-static xQueueHandle xFlowQueue = NULL;
-static xQueueHandle xCarQueue = NULL;
+QueueHandle_t xADCQueue;
+QueueHandle_t xFlowQueue;
+QueueHandle_t xCarQueue;
 
 #endif 

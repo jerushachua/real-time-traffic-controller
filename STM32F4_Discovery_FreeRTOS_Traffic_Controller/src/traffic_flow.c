@@ -17,6 +17,7 @@ void TrafficFlowAdjustTask ( void *pvParameters )
     uint16_t speed_adc_value = 0;
     uint16_t current_speed_value = 0;
     uint16_t change_in_speed;
+    uint16_t queue_value = 0;
 
 	while(1)
 	{
@@ -30,6 +31,13 @@ void TrafficFlowAdjustTask ( void *pvParameters )
 		{
 			speed_adc_value = 7;
 		}
+
+		/*
+		if ( xQueueReceive( xADCQueue, &queue_value, 1000 ) == pdTRUE )
+		{
+			printf("Received old flow value from queue: %u.\n", queue_value);
+		} */
+
         change_in_speed = abs(speed_adc_value - current_speed_value);
 
 	    if(change_in_speed !=  0) 
@@ -40,9 +48,26 @@ void TrafficFlowAdjustTask ( void *pvParameters )
 		    {
 				global_flowrate = speed_adc_value; 
 				xSemaphoreGive( xMutexFlow ); 
-				printf("Updated flowrate:  %u, (ADC Value: %u). \n", speed_adc_value, adc_value );
 
-				// xQueueSend( xFlowQueue, &speed_adc_value, portMAX_DELAY); // testing queue sending
+				// testing queue sending
+				if (xQueueSend( xADCQueue, &speed_adc_value, 1000) == pdTRUE )
+				{
+					printf("Updated flowrate:  %u, (ADC Value: %u). \nSent to ADC Queue. \n", speed_adc_value, adc_value );
+				}
+				else
+				{
+					printf("Failed to send ADC value to ADC Queue (traffic flow task). \n");
+				}
+
+				if (xQueueSend( xFlowQueue, &speed_adc_value, 1000) == pdTRUE )
+				{
+					printf("Updated flowrate:  %u, (ADC Value: %u). \nSent to Flow Queue. \n", speed_adc_value, adc_value );
+				}
+				else
+				{
+					printf("Failed to send ADC value to Car Queue (traffic flow task). \n");
+				}
+
 		    }
 			else{
 				printf("xMutexFlow unavailable \n");
