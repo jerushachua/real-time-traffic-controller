@@ -32,27 +32,19 @@ void TrafficFlowAdjustTask ( void *pvParameters )
 			speed_adc_value = 7;
 		}
 
-		/*
-		if ( xQueueReceive( xADCQueue, &queue_value, 1000 ) == pdTRUE )
+		if ( (xQueueReceive( xADCQueue, &queue_value, 1000 ) == pdTRUE) && (xQueueReceive( xFlowQueue, &queue_value, 1000 )) )
 		{
 			printf("Received old flow value from queue: %u.\n", queue_value);
-		} */
 
-        change_in_speed = abs(speed_adc_value - current_speed_value);
+			change_in_speed = abs(speed_adc_value - queue_value);
+			if( change_in_speed != 0 )
+			{
+				// If the ADC value has changed, update the Flow Queue and ADC Queue.
+				printf("Updating flowrate:  %u, (ADC Value: %u). \n", speed_adc_value, adc_value );
 
-	    if(change_in_speed !=  0) 
-	    {
-	    	current_speed_value = speed_adc_value; 
-
-			if( xSemaphoreTake( xMutexFlow, ( TickType_t ) 10 ) == pdTRUE ) 
-		    {
-				global_flowrate = speed_adc_value; 
-				xSemaphoreGive( xMutexFlow ); 
-
-				// testing queue sending
 				if (xQueueSend( xADCQueue, &speed_adc_value, 1000) == pdTRUE )
 				{
-					printf("Updated flowrate:  %u, (ADC Value: %u). \nSent to ADC Queue. \n", speed_adc_value, adc_value );
+					printf("Updated flowrate sent to ADC Queue. \n");
 				}
 				else
 				{
@@ -61,18 +53,37 @@ void TrafficFlowAdjustTask ( void *pvParameters )
 
 				if (xQueueSend( xFlowQueue, &speed_adc_value, 1000) == pdTRUE )
 				{
-					printf("Updated flowrate:  %u, (ADC Value: %u). \nSent to Flow Queue. \n", speed_adc_value, adc_value );
+					printf("Updated flowrate sent to Flow Queue. \n");
 				}
 				else
 				{
-					printf("Failed to send ADC value to Car Queue (traffic flow task). \n");
+					printf("Failed to send ADC value to Flow Queue (traffic flow task). \n");
 				}
-
-		    }
-			else{
-				printf("xMutexFlow unavailable \n");
 			}
-	    } 
+		}
+		else
+		{
+			// Queue is empty, push items onto queues.
+			printf("Queue is empty, push flowrate onto queues. \n");
+			printf("Updating flowrate:  %u, (ADC Value: %u). \n", speed_adc_value, adc_value );
+
+			if (xQueueSend( xADCQueue, &speed_adc_value, 1000) == pdTRUE )
+			{
+				printf("Updated flowrate sent to ADC Queue. \n");
+			} else
+			{
+				printf("Failed to send ADC value to ADC Queue (traffic flow task). \n");
+			}
+
+			if (xQueueSend( xFlowQueue, &speed_adc_value, 1000) == pdTRUE )
+			{
+				printf("Updated flowrate sent to Flow Queue. \n");
+			}
+			else
+			{
+				printf("Failed to send ADC value to Flow Queue (traffic flow task). \n");
+			}
+		}
 
         vTaskDelay(200);
 	}

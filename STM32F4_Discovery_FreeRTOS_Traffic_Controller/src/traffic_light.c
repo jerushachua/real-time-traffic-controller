@@ -75,28 +75,16 @@ void TrafficLightTask ( void *pvParameters )
 
 	while(1)
 	{
-		// Update local flow/speed variable
-		if( xSemaphoreTake( xMutexFlow, ( TickType_t ) 10 ) == pdTRUE ) 
-	    {
-			new_speed_value = global_flowrate; 
-			xSemaphoreGive( xMutexFlow ); 
-			printf("Traffic Light Task: updated local flowrate:  %u.\n", new_speed_value );
-
-			// testing queue receive
-			if (xQueueReceive( xFlowQueue, &new_speed_value, 1000 ) )
-			{	
-				printf("Successfully received flowrate from Flow Queue (traffic light task).\n");
-				printf("Queue flowrate:  %u.\n", new_speed_value );
-			} else
-			{
-				printf("Failed to receive flowrate from Flow Queue (traffic light task). \n ");
-			}
-
-	    }
+		if (xQueueReceive( xFlowQueue, &new_speed_value, 1000 ) )
+		{
+			printf("Successfully received flowrate from Flow Queue (traffic light task).\n");
+			printf("Queue flowrate:  %u.\n", new_speed_value );
+		}
 		else
 		{
-			printf("Traffic Light Task: xMutexFlow unavailable \n");
+			printf("Failed to receive flowrate from Flow Queue (traffic light task). \n ");
 		}
+
 
 		/* 
 		 * The length of the light timers depends on the current flow rate. 
