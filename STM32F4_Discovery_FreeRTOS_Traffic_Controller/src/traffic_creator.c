@@ -44,12 +44,14 @@ void TrafficCreatorTask ( void *pvParameters )
 		 * generate random number range 0 to 64, inclusive
 		 * if the random number is below 64 / flowrate + 1, create a car
 		 * if the value from traffic flow task is high, there is a higher probability of a car being created
+		 *  rand num % 64 < 8  * flowrate + 1
+		 *  0 to 63 range < 8 * ( 1 to 8 range) 
+		 *  then at max flow rate, the probability of a car being created is near 100% 
+		 *  0 to 63 range < 8*8 = 64 
 		*/
-		car_value = ( rand() % 64 ) > 64 / (flowrate+1); 
+		car_value = ( rand() % 64 ) < ( 8 * (flowrate+1) ); 
 
-		printf("Car value updated to:  %u \n", car_value);
-
-		if( xSemaphoreTake( xMutexCars, ( TickType_t ) 10 ) == pdTRUE ) // get flowrate mutex to update with new traffic flowrate
+		if( xSemaphoreTake( xMutexCars, ( TickType_t ) 10 ) == pdTRUE )
 		{
 			global_car_value = car_value;
 			xSemaphoreGive( xMutexCars );
