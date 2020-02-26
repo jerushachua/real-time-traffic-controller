@@ -36,7 +36,6 @@ void TrafficFlowAdjustTask ( void *pvParameters )
 	    {
 	    	current_speed_value = speed_adc_value; 
 
-			// TODO: push ADC value onto the queue 
 			if( xSemaphoreTake( xMutexFlow, ( TickType_t ) 10 ) == pdTRUE ) 
 		    {
 				global_flowrate = speed_adc_value; 

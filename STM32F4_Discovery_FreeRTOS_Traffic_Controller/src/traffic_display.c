@@ -1,8 +1,8 @@
 /*
  * Traffic Display file. 
  *
- * Traffic light task: This task controls the timing of the traffic light. 
- * The timing of the light is directly affected by the flow of traffic. 
+ * Traffic display task: This task controls cars moving across the LED display. 
+ * There are different cases for when the light is green or red. 
  * 
  */
 
@@ -14,8 +14,8 @@ void TrafficDisplayTask ( void *pvParameters )
 	//get value from traffic creator
 	uint16_t car_value = 0; 
 	uint16_t light_colour = 1; 
-    uint16_t currentactiveprelighttraffic[8] = {0}; 
-    uint16_t newactiveprelighttraffic[8] = {0};
+    uint16_t cur_prelight_traffic[8] = {0}; 
+    uint16_t next_prelight_traffic[8] = {0};
 
 	while(1)
 	{
@@ -41,59 +41,68 @@ void TrafficDisplayTask ( void *pvParameters )
 			printf("xMutexLight unavailable.  \n");
 		}
 
-
+		// Light is green. 
 		if(light_colour == 1)
 		{
-			printf("Light is green, shifting normally. \n ");
+			printf("Light is green. \n ");
 
 			SR_PreLight(car_value); 
-			SR_PostLight(currentactiveprelighttraffic[7]); 
+			SR_PostLight(cur_prelight_traffic[7]); 
 
-			newactiveprelighttraffic[0] = car_value; 
+			next_prelight_traffic[0] = car_value; 
 
 			// shift the new car onto the list of cars
 			for (uint16_t i = 1; i != 8; i++) 
 			{
-				newactiveprelighttraffic[i] = currentactiveprelighttraffic[i-1];
+				next_prelight_traffic[i] = cur_prelight_traffic[i-1];
 			}
 		}
+
+		// Light is red. 
 		else if(light_colour == 0)
 		{
-			printf("Light is red, doing fast shift. \n ");
+			printf("Light is red. \n ");
 
-			uint16_t encounteredzero = 0;
+			uint16_t gap = 0;
 
-			// TODO: refactor this 
-			for (uint16_t i = 7; i != 0; i--)                                          // Search through the traffic list by decrementing, looking for the first 0
+			/* 
+			 * The light is red. This means we need to shift the cars up to the stop line.
+			 * The cars should be bumper to bumper, without any gaps in the LEDs. 
+			 * The "gaps" are represented by zeros. 
+			 * 
+			 * Search the traffic array for zeros. If there are any, shift all the cars up by one spot. 
+			 * Keep track of whether or not a gap is found 
+			 * 
+			 */ 
+			for (uint16_t i = 7; i != 0; i--) 
 			{
-	            if(currentactiveprelighttraffic[i] == 0)                               // Find a zero in the active traffic. If it exists, set the encounteredzero flag
+	            if(cur_prelight_traffic[i] == 0) 
 	            {
-	            	encounteredzero = 1;                                               // Set encounteredzero flag high
-	            	newactiveprelighttraffic[0] = car_value;                           // A zero exists in the active traffic (traffic isn't full), so shifting new car on.
-	            }
+	            	gap = 1;
+	            	next_prelight_traffic[0] = car_value;
+	            } 
 
-	            if(encounteredzero == 1)                                               // If zero is found, shift the remaining values normally.
+				// If a gap was found, shift all the cars up by one spot. 
+	            if(gap == 1)
 	            {
-	            	newactiveprelighttraffic[i] = currentactiveprelighttraffic[i-1];
-	            }
-	            else                                                                   // Zero not found yet, so no shifting occurs as cars don't move on a red light
-	            {
-	            	newactiveprelighttraffic[i] = currentactiveprelighttraffic[i];
+	            	next_prelight_traffic[i] = cur_prelight_traffic[i-1];
+	            } else {
+	            	next_prelight_traffic[i] = cur_prelight_traffic[i];
 	            }
 			}
 
-
+			// Now all cars have been moved appropriately. Send the data to the shift registers. 
 			for (int16_t i = 7; i >= 0 ; i--) 
 			{
-				SR_PreLight(newactiveprelighttraffic[i] );
+				SR_PreLight(next_prelight_traffic[i] );
 			}
-			SR_PostLight(0);
-		}
+			SR_PostLight(0); // bug: if light is red, all cars POST light disappear. 
+		} 
 
-		// move all the lights forward
+		// Move all the cars forward by one. 
 		for(uint16_t i = 0; i != 8; i++)
 		{
-			currentactiveprelighttraffic[i] = newactiveprelighttraffic[i];
+			cur_prelight_traffic[i] = next_prelight_traffic[i];
 		}
 
 		vTaskDelay(100);

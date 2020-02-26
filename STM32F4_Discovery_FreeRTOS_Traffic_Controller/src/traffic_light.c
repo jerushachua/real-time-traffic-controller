@@ -103,6 +103,10 @@ void TrafficLightTask ( void *pvParameters )
 		 * Red light duration is directly proportional to the inverse of the rate of traffic flow. 
 		 * A high flowrate means the red light period is shorter. 
 		 * Ex. 3000 * ( 8 - flowrate ) for flow rates of [0, 1, 2 ...] = [3000, 6000, 9000, 12000, 15000, 18000, 21000, 24000] 
+		 * 
+		 * Yellow light duration never changes. The traffic light only switches to yellow when switching in between 
+		 * green and red. 
+		 * 
 		 */ 
 		if(current_speed_value !=  new_speed_value) 
 		{
