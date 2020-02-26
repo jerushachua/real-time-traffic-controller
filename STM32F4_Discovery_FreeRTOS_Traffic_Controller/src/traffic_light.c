@@ -98,11 +98,11 @@ void TrafficLightTask ( void *pvParameters )
 		 * 
 		 * Green light duration is directly proportional to the rate of traffic flow. 
 		 * A high flowrate should mean the green light period is longer. 
-		 * Ex. 3000 * ( 8 - flowrate ) for flowrates of [0, 1, 2 ...] = [24000, 21000, 18000, 15000, 12000, 9000, 6000, 3000]
+		 * Ex. 16000 * ( flowrate + 1 ) / 8 for flowrates of [0, 1, 2 ...] = [3000, 6000, 9000, 12000, 15000, 18000, 21000, 24000]
 		 * 
 		 * Red light duration is directly proportional to the inverse of the rate of traffic flow. 
 		 * A high flowrate means the red light period is shorter. 
-		 * Ex. 3000 * ( 8 - flowrate ) for flow rates of [0, 1, 2 ...] = [3000, 6000, 9000, 12000, 15000, 18000, 21000, 24000] 
+		 * Ex. 2000 * ( 8 - flowrate ) + 3000 for flow rates of [0, 1, 2 ...] = [20000, 18000, 15000, 13000, 11000, 9000, 7000, 5000]
 		 * 
 		 * Yellow light duration never changes. The traffic light only switches to yellow when switching in between 
 		 * green and red. 
@@ -113,7 +113,7 @@ void TrafficLightTask ( void *pvParameters )
 			if(xTimerIsTimerActive( xGreenLightSoftwareTimer ))
 			{
 				xTimerStop(xGreenLightSoftwareTimer, 0); 
-				xTimerChangePeriod(xGreenLightSoftwareTimer, (3000 * (8 - new_speed_value))  / portTICK_PERIOD_MS, 0 );  
+				xTimerChangePeriod(xGreenLightSoftwareTimer, (24000 * ((new_speed_value + 1) / 8))  / portTICK_PERIOD_MS, 0 );  
 				xTimerChangePeriod(xRedLightSoftwareTimer, (3000 * (8 - new_speed_value)) / portTICK_PERIOD_MS, 0 ); 
 				xTimerStop(xRedLightSoftwareTimer, 0); 
 			}
